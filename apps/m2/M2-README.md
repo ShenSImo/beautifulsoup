@@ -52,3 +52,56 @@ Line numbers refer to the original, unmodified source (commit `a49ea64`, bs4 4.1
 | `soup.prettify()` | `Tag.prettify` | `bs4/element.py` | 2601 | task 1, 6, 7 |
 | `soup.find_all(...)` | `Tag.find_all` | `bs4/element.py` | 2715 | task 2-8 |
 | `tag.name = "blockquote"` | `Tag.name` (`self.name = name`) | `bs4/element.py` | 1648 | task 6 |
+
+## Part3: SoupReplacer
+
+### how to use
+
+```python
+from bs4 import BeautifulSoup, SoupReplacer
+r = SoupReplacer(“b”, “blockquote”)
+soup = BeautifulSoup(html, “html.parser”, replacer=r)
+```
+
+It changes every `<b>` tag to `<blockquote>` while the file is being parsed.
+
+I used `_` instead of `-` when naming the paramter `og-tag` and `alt-tag`.
+
+### What I changed
+
+- `bs4/replacer.py` (new file): the SoupReplacer class.
+- `bs4/__init__.py`:
+  - import SoupReplacer
+  - added `replacer=None` to `BeautifulSoup.__init__`
+  - in `handle_starttag`: change the tag name before the tag is created
+  - in `handle_endtag`: change the end tag name too
+
+### Why I did it this way
+
+- I put the change in `handle_starttag` and `handle_endtag` because every parser calls these two methods, and SoupStrainer is also checked there.
+- The end tag also needs to be renamed. Otherwise `</b>` can't close the `<blockquote>`, and the rest of the page ends up inside it.
+- If no replacer is given, nothing changes. All old tests give the same result as before.
+
+### Tests
+
+Run: `pytest bs4/tests/test_soupreplacer.py -v`
+
+- `test_b_replaced_with_blockquote`: checks that every `<b>` becomes `<blockquote>`.
+- `test_replaced_tag_closes_correctly`: checks that `<span>` comes after `</blockquote>`, not inside it. This fails if `handle_endtag` is not changed.
+
+All tests: 1 failed, 621 passed, 216 skipped. (619 old + 2 new. The 1 failure was already there before my change.)
+
+### task6
+
+Run: `python apps/m2/task6.py <file.html>`
+
+The output is the same as Milestone 1 task6 (checked with `diff`).
+
+Speed on `bash-x50.html` (52 MB):
+
+| | Time | Memory |
+|---|---|---|
+| M1 task6 | 10.96 s | 1196 MB |
+| M2 task6 | 10.84 s | 1197 MB |
+
+Almost no difference. SoupReplacer skips one loop over the tree, but most of the time is spent on parsing and `prettify()`.
