@@ -33,6 +33,7 @@ __all__ = [
     "Tag",
     "TemplateString",
     "ElementFilter",
+    "SoupReplacer",
     "UnicodeDammit",
     "CData",
     "Doctype",
@@ -92,6 +93,7 @@ from .filter import (
     ElementFilter,
     SoupStrainer,
 )
+from .replacer import SoupReplacer
 from typing import (
     Any,
     cast,
@@ -212,6 +214,7 @@ class BeautifulSoup(Tag):
         features: Optional[Union[str, Sequence[str]]] = None,
         builder: Optional[Union[TreeBuilder, Type[TreeBuilder]]] = None,
         parse_only: Optional[SoupStrainer] = None,
+        replacer: Optional[SoupReplacer] = None,
         from_encoding: Optional[_Encoding] = None,
         exclude_encodings: Optional[_Encodings] = None,
         element_classes: Optional[Dict[Type[PageElement], Type[PageElement]]] = None,
@@ -239,6 +242,9 @@ class BeautifulSoup(Tag):
          matching the SoupStrainer will be considered. This is useful
          when parsing part of a document that would otherwise be too
          large to fit into memory.
+
+        :param replacer: A SoupReplacer. Tags are renamed while the 
+        document is being parsed and before the tree is constructed.
 
         :param from_encoding: A string indicating the encoding of the
          document to be parsed. Pass this in if Beautiful Soup is
@@ -435,6 +441,7 @@ class BeautifulSoup(Tag):
         self.known_xml = self.is_xml
         self._namespaces = dict()
         self.parse_only = parse_only
+        self.replacer = replacer
 
         if hasattr(markup, "read"):  # It's a file-type object.
             markup = markup.read()
@@ -1018,6 +1025,9 @@ class BeautifulSoup(Tag):
         # print("Start tag %s: %s" % (name, attrs))
         self.endData()
 
+        if self.replacer is not None:
+            name = self.replacer.replace(name)
+
         if (
             self.parse_only
             and len(self.tagStack) <= 1
@@ -1060,6 +1070,8 @@ class BeautifulSoup(Tag):
         """
         # print("End tag: " + name)
         self.endData()
+        if self.replacer is not None:
+            name = self.replacer.replace(name)
         self._popToTag(name, nsprefix)
 
     def handle_data(self, data: str) -> None:
