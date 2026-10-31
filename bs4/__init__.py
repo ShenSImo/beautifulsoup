@@ -808,6 +808,8 @@ class BeautifulSoup(Tag):
             self.preserve_whitespace_tag_stack.pop()
         if self.string_container_stack and tag == self.string_container_stack[-1]:
             self.string_container_stack.pop()
+        if self.replacer is not None:
+            self.replacer.transform(tag)
         # print("Pop", tag.name)
         if self.tagStack:
             self.currentTag = self.tagStack[-1]
@@ -1025,9 +1027,6 @@ class BeautifulSoup(Tag):
         # print("Start tag %s: %s" % (name, attrs))
         self.endData()
 
-        if self.replacer is not None:
-            name = self.replacer.replace(name)
-
         if (
             self.parse_only
             and len(self.tagStack) <= 1
@@ -1070,8 +1069,6 @@ class BeautifulSoup(Tag):
         """
         # print("End tag: " + name)
         self.endData()
-        if self.replacer is not None:
-            name = self.replacer.replace(name)
         self._popToTag(name, nsprefix)
 
     def handle_data(self, data: str) -> None:
