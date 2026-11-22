@@ -790,6 +790,13 @@ class BeautifulSoup(Tag):
         """
         raise NotImplementedError("BeautifulSoup objects don't support insert_after().")
 
+    def __iter__(self) -> Iterator[PageElement]:
+        node = self.contents[0] if self.contents else None
+        while node is not None:
+            next_node = node.next_element
+            yield node
+            node = next_node
+        
     def popTag(self) -> Optional[Tag]:
         """Internal method called by _popToTag when a tag is closed.
 
